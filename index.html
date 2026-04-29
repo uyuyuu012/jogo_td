@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overload TD</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0a0a0c;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- TELA DE INTRODUÇÃO / LORE --- */
+        #intro-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #050505;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: left;
+            background-image: radial-gradient(circle, #112 0%, #000 100%);
+        }
+
+        #intro-text-container {
+            max-width: 800px;
+            min-height: 350px;
+        }
+
+        #intro-text {
+            color: #00ffcc;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 22px;
+            line-height: 1.6;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.4);
+            white-space: pre-wrap;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 12px;
+            height: 22px;
+            background-color: #00ffcc;
+            animation: blink 1s step-end infinite;
+            vertical-align: bottom;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* --- MENU E JOGO --- */
+        #menu-screen {
+            display: none; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            text-align: center;
+        }
+
+        .menu-title {
+            font-size: 54px;
+            color: #00ffcc;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+            letter-spacing: 2px;
+        }
+
+        .difficulty-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .diff-btn {
+            padding: 8px 16px;
+            border: 2px solid #333;
+            background: #1a1a1e;
+            color: #888;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .diff-btn.active {
+            border-color: #00ffcc;
+            color: #00ffcc;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+        }
+
+        .levels-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .level-card {
+            width: 130px;
+            height: 130px;
+            background: #1a1a1e;
+            border: 2px solid #333;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .level-card.unlocked:hover {
+            border-color: #00ffcc;
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 255, 204, 0.2);
+        }
+
+        #game-container {
+            position: relative;
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.3);
+            border: 2px solid #222;
+            border-radius: 8px;
+            overflow: hidden;
+            width: 95vw;
+            height: 85vh;
+            display: none; 
+        }
+
+        canvas {
+            display: block;
+            background-color: #000;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            font-size: 22px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,1);
+            z-index: 50;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+            box-sizing: border-box;
+        }
+
+        #tutorial-dialogue {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(26, 26, 30, 0.95);
+            border: 2px solid #00ffcc;
+            padding: 20px 30px;
+            border-radius: 15px;
+            min-width: 60%;
+            max-width: 80%;
+            z-index: 60;
+            display: none;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            text-align: left;
+        }
+
+        #commander-avatar {
+            width: 60px;
+            height: 60px;
+            background-color: #00ff00;
+            border: 3px solid #00ffcc;
+            border-radius: 8px;
+            margin-right: 20px;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
+            flex-shrink: 0;
+        }
+
+        .dialogue-title {
+            color: #00ffcc;
+            font-weight: bold;
+            font-size: 16px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        #tutorial-msg {
+            font-size: 18px;
+            margin: 0;
+            line-height: 1.4;
+            min-height: 50px;
+        }
+
+        #game-over {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            display: none;
+            z-index: 100;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            font-size: 18px;
+            background-color: #00ffcc;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px;
+            transition: 0.2s;
+            text-transform: uppercase;
+        }
+
+        .btn:hover { transform: scale(1.05); }
+
+        #speed-btn {
+            position: absolute;
+            top: 100px;
+            right: 20px;
+            padding: 10px 15px;
+            background-color: #00ffcc;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 55;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE INTRODUÇÃO -->
+    <div id="intro-screen">
+        <div id="intro-text-container">
+            <span id="intro-text"></span><span class="cursor" id="intro-cursor"></span>
+        </div>
+        <div style="margin-top: 40px;">
+            <button class="btn" id="skip-intro-btn" style="background-color: #444; color: #fff;" onclick="skipIntro()">Pular Inicialização</button>
+            <button class="btn" id="start-menu-btn" style="display:none; background-color: #00ffcc; box-shadow: 0 0 15px #00ffcc;" onclick="skipIntro()">Acessar Sistema OVERLOAD</button>
+        </div>
+    </div>
+
+    <!-- TELA DO MENU -->
+    <div id="menu-screen">
+        <h1 class="menu-title">Overload TD</h1>
+        
+        <p style="color: #666; margin-bottom: 10px; font-weight: bold;">NÍVEL DE AMEAÇA:</p>
+        <div class="difficulty-selector">
+            <button class="diff-btn active" onclick="setDifficulty('easy', this)">FÁCIL</button>
+            <button class="diff-btn" onclick="setDifficulty('medium', this)">MÉDIO</button>
+            <button class="diff-btn" onclick="setDifficulty('hard', this)">DIFÍCIL</button>
+        </div>
+
+        <div class="levels-grid">
+            <div class="level-card unlocked" style="border-color: #ffcc00;" onclick="startLevel(0)">
+                <h3 style="color: #ffcc00;">0</h3>
+                <p>Treinamento</p>
+            </div>
+            <div class="level-card unlocked" onclick="startLevel(1)">
+                <h3>1</h3>
+                <p>Setor Alpha</p>
+            </div>
+            <div class="level-card unlocked" onclick="startLevel(2)">
+                <h3>2</h3>
+                <p>Fábrica de Silício</p>
+            </div>
+            <div class="level-card unlocked" onclick="startLevel(3)">
+                <h3>3</h3>
+                <p>Núcleo Nexus</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA DO JOGO -->
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="tutorial-dialogue">
+            <div style="display: flex; align-items: center;">
+                <div id="commander-avatar"></div>
+                <div style="flex-grow: 1;">
+                    <div class="dialogue-title">Comandante Kael</div>
+                    <p id="tutorial-msg"></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="ui-layer">
+            <span style="color: #00ffcc;">VIDAS: <span id="lives">5</span></span>
+            <span style="color: #ff33ff;">ONDA: <span id="wave-display">1 / 10</span></span>
+            <span style="color: #ffcc00;">DINHEIRO: $<span id="money">0</span></span>
+        </div>
+        
+        <button id="speed-btn" onclick="toggleSpeed()">▶ 1x Vel</button>
+        
+        <div id="game-over">
+            <h1 id="game-over-title">Missão Finalizada</h1>
+            <p style="font-size: 24px; color: #ffcc00;">Saldo de Guerra: $<span id="final-money">0</span></p>
+            <button id="restart-btn" class="btn" onclick="reiniciarJogo()">Reiniciar Missão</button>
+            <button class="btn" style="background-color: #888;" onclick="backToMenu()">Quartel General (Menu)</button>
+        </div>
+    </div>
+
+    <script>
+        // --- SISTEMA DE INTRODUÇÃO ---
+        const loreText = `> SISTEMA INICIADO...
+> ANO 2084.
+
+Os robôs enlouqueceram e decidiram dominar o mundo.
+Eles destruíram nossas cidades e tomaram o controle de quase tudo.
+
+Você é um soldado e nossa última esperança.
+Seu instrutor, o Comandante Kael, vai te ensinar a lutar.
+
+Nossa missão é proteger as bases de energia que sobraram.
+Os robôs estão vindo.
+Boa sorte, soldado!`;
+
+        let introIdx = 0;
+        let introInterval;
+
+        function typeIntro() {
+            if (introIdx < loreText.length) {
+                document.getElementById('intro-text').textContent += loreText.charAt(introIdx);
+                introIdx++;
+                introInterval = setTimeout(typeIntro, 35); 
+            } else {
+                document.getElementById('skip-intro-btn').style.display = 'none';
+                document.getElementById('start-menu-btn').style.display = 'inline-block';
+                document.getElementById('intro-cursor').style.animation = 'blink 1s step-end infinite';
+            }
+        }
+
+        function skipIntro() {
+            clearTimeout(introInterval);
+            document.getElementById('intro-screen').style.display = 'none';
+            document.getElementById('menu-screen').style.display = 'flex';
+        }
+
+        window.onload = () => {
+            typeIntro();
+        };
+
+        // --- SISTEMA DO JOGO ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const menuScreen = document.getElementById('menu-screen');
+        const gameContainer = document.getElementById('game-container');
+        const livesEl = document.getElementById('lives');
+        const waveEl = document.getElementById('wave-display');
+        const moneyEl = document.getElementById('money');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalMoneyEl = document.getElementById('final-money');
+        const tutorialBox = document.getElementById('tutorial-dialogue');
+        const tutorialMsg = document.getElementById('tutorial-msg');
+
+        // Carregar Sprite do Jogador e remover o fundo preto automaticamente
+        const playerSprite = new Image();
+        playerSprite.crossOrigin = "Anonymous";
+        let processedSprite = null; // Guardará o sprite sem fundo
+        
+        playerSprite.onload = function() {
+            // Cria um canvas temporário para manipular os pixels da imagem JPG
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = playerSprite.width;
+            tempCanvas.height = playerSprite.height;
+            const tCtx = tempCanvas.getContext('2d');
+            tCtx.drawImage(playerSprite, 0, 0);
+            
+            try {
+                const imgData = tCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                const data = imgData.data;
+                // Percorre todos os pixels
+                for (let i = 0; i < data.length; i += 4) {
+                    // Remove APENAS o preto puro (fundo) para não apagar a armadura
+                    if (data[i] < 10 && data[i+1] < 10 && data[i+2] < 10) {
+                        data[i+3] = 0; // Alpha = 0 (Transparente)
+                    }
+                }
+                tCtx.putImageData(imgData, 0, 0);
+                processedSprite = tempCanvas; // Salva o canvas processado
+            } catch(e) {
+                console.warn("Aviso de CORS: Não foi possível remover o fundo no preview online.");
+                processedSprite = playerSprite; // Fallback caso dê erro
+            }
+        };
+
+        playerSprite.onerror = function() {
+            console.warn("Aviso de Preview: A imagem local não foi encontrada neste ambiente online. Ativando visual de segurança.");
+            player.fallback = true;
+        };
+
+        // Carrega o arquivo PNG da nova pasta
+        playerSprite.src = '../src/img/player-td.png'; 
+
+        let worldWidth = 1000;
+        let worldHeight = 1100;
+        let camera = { x: 0, y: 0 };
+        let currentWaypoints = [];
+        let tutorialStep = 0;
+        let tutorialTarget = null;
+        let tutorialDelay = 0;
+        let screenShake = 0;
+
+        let particles = [];
+        let floatingTexts = [];
+
+        let typeWriter = {
+            fullText: "",
+            currentText: "",
+            index: 0,
+            timer: 0,
+            speed: 1
+        };
+
+        function setDialogue(text) {
+            if (typeWriter.fullText !== text) {
+                typeWriter.fullText = text;
+                typeWriter.currentText = "";
+                typeWriter.index = 0;
+                typeWriter.timer = 0;
+                tutorialMsg.innerText = "";
+            }
+        }
+
+        function processTypeWriter() {
+            if (typeWriter.index < typeWriter.fullText.length) {
+                typeWriter.timer++;
+                if (typeWriter.timer >= typeWriter.speed) {
+                    typeWriter.timer = 0;
+                    typeWriter.currentText += typeWriter.fullText.charAt(typeWriter.index);
+                    typeWriter.index++;
+                    tutorialMsg.innerText = typeWriter.currentText;
+                }
+            }
+        }
+
+        function resizeCanvas() {
+            if (gameContainer.clientWidth > 0) {
+                canvas.width = gameContainer.clientWidth;
+                canvas.height = gameContainer.clientHeight;
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        let game = {
+            isRunning: false,
+            lives: 5,
+            money: 0,
+            frame: 0,
+            wave: 1,
+            enemiesToSpawn: 5,
+            tankToSpawn: 0,
+            bossToSpawn: 0,
+            fastToSpawn: 0,
+            waveDelayCounter: 0,
+            waveDelay: 180, 
+            isWaitingForWave: false,
+            isDoubleSpeed: false,
+            currentLevel: 1,
+            difficulty: 'easy'
+        };
+
+        let buildings = [];
+        let towers = [];
+        let activeSpot = null; 
+
+        // Adicionado sistema de animação para o player
+        const player = {
+            // MUDANÇA AQUI: speed de 4 para 2, fireRate de 20 para 40
+            x: 435, y: 950, size: 30, speed: 2, color: '#00ffcc', 
+            range: 120, fireRate: 40, damage: 1.0, lastFire: 0,
+            trail: [],
+            // Estados de animação do sprite
+            frameX: 0,
+            frameY: 0,
+            facing: 'right', // 'right', 'left', 'down', 'up'
+            state: 'idle',    // 'idle', 'walk', 'shoot'
+            fallback: false
+        };
+
+        let enemies = [];
+        let projectiles = [];
+
+        const keys = {
+            ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false,
+            w: false, a: false, s: false, d: false
+        };
+
+        window.addEventListener('keydown', (e) => { 
+            let key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(e.key)) keys[e.key] = true; 
+            if (keys.hasOwnProperty(key)) keys[key] = true; 
+        });
+        
+        window.addEventListener('keyup', (e) => { 
+            let key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(e.key)) keys[e.key] = false; 
+            if (keys.hasOwnProperty(key)) keys[key] = false; 
+        });
+
+        function setDifficulty(diff, btn) {
+            game.difficulty = diff;
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        class Particle {
+            constructor(x, y, color, speed, size, life) {
+                this.x = x; this.y = y; this.color = color;
+                this.vx = (Math.random() - 0.5) * speed;
+                this.vy = (Math.random() - 0.5) * speed;
+                this.size = size; this.life = life; this.maxLife = life;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                this.life--;
+                this.size *= 0.95;
+            }
+            draw() {
+                ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
+                ctx.fillStyle = this.color;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        function createExplosion(x, y, color, amount, speedMult = 10) {
+            for(let i=0; i<amount; i++) {
+                particles.push(new Particle(x, y, color, speedMult, Math.random()*4 + 2, 30));
+            }
+        }
+
+        class FloatingText {
+            constructor(x, y, text, color) {
+                this.x = x; this.y = y; this.text = text; this.color = color;
+                this.life = 60; this.vy = -1;
+            }
+            update() { this.y += this.vy; this.life--; }
+            draw() {
+                ctx.globalAlpha = Math.max(0, this.life / 60);
+                ctx.fillStyle = this.color; ctx.font = 'bold 20px "Segoe UI"';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.textAlign = 'left';
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        function setupLevelData(lvl) {
+            buildings = [];
+            if (lvl === 0) {
+                worldWidth = 1000; worldHeight = 1100;
+                currentWaypoints = [{ x: 500, y: -100 }, { x: 500, y: 1200 }];
+                buildings = [
+                    { x: 300, y: 400, w: 120, h: 120, color: '#1a4b8c', hasSpot: true, spotType: 'blue' }
+                ];
+                player.x = 485; player.y = 800;
+                tutorialStep = 1;
+                tutorialBox.style.display = 'block';
+                tutorialTarget = { x: 500, y: 600, radius: 45, timer: 0 };
+            } else if (lvl === 1) {
+                worldWidth = 1000; worldHeight = 1100;
+                currentWaypoints = [
+                    { x: 250, y: -50 }, { x: 250, y: 350 }, { x: 800, y: 350 },
+                    { x: 800, y: 750 }, { x: 450, y: 750 }, { x: 450, y: 1050 }
+                ];
+                buildings = [
+                    { x: 340, y: 160, w: 120, h: 120, color: '#1a4b8c', hasSpot: true, spotType: 'blue' },
+                    { x: 60,  y: 280, w: 120, h: 120, color: '#1a4b8c', hasSpot: true, spotType: 'blue' },
+                    { x: 880, y: 500, w: 120, h: 120, color: '#4a1a8c', hasSpot: true, spotType: 'purple' },
+                    { x: 600, y: 160, w: 120, h: 120, color: '#1a3c2b', hasSpot: true, spotType: 'green' },
+                    { x: 640, y: 820, w: 120, h: 120, color: '#2b3c1a', hasSpot: true, spotType: 'green' },
+                    { x: 240, y: 700, w: 120, h: 120, color: '#3b3b3b', hasSpot: true, spotType: 'green' },
+                    { x: 465, y: 490, w: 120, h: 120, color: 'transparent', hasSpot: true, spotType: 'laser' }
+                ];
+                player.x = 435; player.y = 950;
+            } else if (lvl === 2) {
+                worldWidth = 1000; worldHeight = 1100;
+                currentWaypoints = [
+                    { x: 100, y: -50 }, { x: 100, y: 500 }, { x: 900, y: 500 },
+                    { x: 900, y: 150 }, { x: 450, y: 150 }, { x: 450, y: 1050 }
+                ];
+                buildings = [
+                    { x: 240, y: 220, w: 120, h: 120, color: '#1a4b8c', hasSpot: true, spotType: 'blue' },
+                    { x: 240, y: 650, w: 120, h: 120, color: '#1a4b8c', hasSpot: true, spotType: 'blue' },
+                    { x: 750, y: 350, w: 120, h: 120, color: '#4a1a8c', hasSpot: true, spotType: 'purple' },
+                    { x: 600, y: 700, w: 120, h: 120, color: '#1a3c2b', hasSpot: true, spotType: 'green' }
+                ];
+                player.x = 435; player.y = 950;
+            } else if (lvl === 3) {
+                worldWidth = 1500; worldHeight = 1500;
+                currentWaypoints = [
+                    { x: 150, y: -50 }, { x: 150, y: 1350 }, { x: 750, y: 1350 },
+                    { x: 750, y: 150 }, { x: 1350, y: 150 }, { x: 1350, y: 1550 }
+                ];
+                buildings = [
+                    { x: 300, y: 300, w: 120, h: 120, color: '#1a4b8c', hasSpot: true, spotType: 'blue' },
+                    { x: 300, y: 600, w: 120, h: 120, color: '#1a3c2b', hasSpot: true, spotType: 'green' },
+                    { x: 500, y: 1000, w: 120, h: 120, color: '#4a1a8c', hasSpot: true, spotType: 'purple' },
+                    { x: 500, y: 700, w: 120, h: 120, color: '#1a4b8c', hasSpot: true, spotType: 'blue' },
+                    { x: 900, y: 350, w: 120, h: 120, color: '#1a3c2b', hasSpot: true, spotType: 'green' },
+                    { x: 900, y: 750, w: 120, h: 120, color: '#4a1a8c', hasSpot: true, spotType: 'purple' },
+                    { x: 1100, y: 1050, w: 120, h: 120, color: '#1a4b8c', hasSpot: true, spotType: 'blue' },
+                    { x: 1100, y: 550, w: 120, h: 120, color: '#1a3c2b', hasSpot: true, spotType: 'green' }
+                ];
+                player.x = 450; player.y = 1200;
+            }
+
+            buildings.forEach(b => {
+                if (b.hasSpot) {
+                    b.spotSize = 50; b.spotX = b.x + (b.w - b.spotSize) / 2;
+                    b.spotY = b.y + (b.h - b.spotSize) / 2; b.hasTower = false;
+                }
+            });
+        }
+
+        class Tower {
+            constructor(x, y, spot, type) {
+                this.x = x; this.y = y; this.spot = spot; this.type = type; 
+                this.lastFire = 0; this.level = 1; this.totalSpent = 0;
+                
+                let dmgMult = game.difficulty === 'hard' ? 1.2 : (game.difficulty === 'easy' ? 0.8 : 1.0);
+                
+                // MUDANÇA AQUI: fireRate dobrado para atirar na metade da velocidade
+                if (this.type === 'blue') {
+                    this.range = 220; this.fireRate = 80; this.baseDamage = 2.5; this.color = '#3366ff'; this.totalSpent = 50;
+                } else if (this.type === 'purple') {
+                    this.range = 200; this.fireRate = 180; this.baseDamage = 10; this.color = '#aa00ff'; this.totalSpent = 100;
+                } else if (this.type === 'laser') {
+                    // Dano por frame cortado pela metade, pois os inimigos ficam o dobro do tempo no mapa
+                    this.range = 280; this.baseDamagePerFrame = 1/120; this.color = '#00ffff'; this.totalSpent = 150;
+                } else {
+                    this.range = 260; this.fireRate = 80; this.baseDamage = 1; this.color = '#00ffcc'; this.totalSpent = 75;
+                }
+
+                if (this.baseDamage) this.damage = this.baseDamage * dmgMult;
+                if (this.baseDamagePerFrame) this.damagePerFrame = this.baseDamagePerFrame * dmgMult;
+            }
+
+            getUpgradeCost() {
+                if (this.type === 'blue') {
+                    if (this.level === 1) return 60;
+                    if (this.level === 2) return 100;
+                } else if (this.type === 'green') {
+                    if (this.level === 1) return 100;
+                    if (this.level === 2) return 150;
+                } else if (this.type === 'purple') {
+                    if (this.level === 1) return 120;
+                    if (this.level === 2) return 200;
+                } else if (this.type === 'laser') {
+                    if (this.level === 1) return 150;
+                    if (this.level === 2) return 250;
+                }
+                return 0;
+            }
+
+            upgrade() {
+                const cost = this.getUpgradeCost();
+                if (cost > 0 && game.money >= cost) {
+                    game.money -= cost; this.totalSpent += cost;
+                    this.level++; moneyEl.innerText = game.money;
+                    
+                    createExplosion(this.x, this.y, '#fff', 30, 8);
+                    floatingTexts.push(new FloatingText(this.x, this.y - 30, 'LVL UP!', '#fff'));
+
+                    let dmgMult = game.difficulty === 'hard' ? 1.2 : (game.difficulty === 'easy' ? 0.8 : 1.0);
+
+                    if (this.type === 'blue' && this.level === 2) this.damage = 5 * dmgMult;
+                    if (this.type === 'green' && this.level === 2) this.range = 380;
+                    if (this.type === 'purple' && this.level === 2) this.damage = 15 * dmgMult;
+                    // MUDANÇA AQUI: Laser damage adjustments
+                    if (this.type === 'laser' && this.level === 2) this.damagePerFrame = (2.5/120) * dmgMult;
+                    if (this.type === 'laser' && this.level === 3) { this.damagePerFrame = (5/120) * dmgMult; this.range = 350; }
+                    return true;
+                }
+                return false;
+            }
+
+            update() {
+                let closestEnemy = null, closestDist = this.range;
+                enemies.forEach(enemy => {
+                    const d = Math.hypot(enemy.x - this.x, enemy.y - this.y);
+                    if (d < closestDist) { closestDist = d; closestEnemy = enemy; }
+                });
+
+                if (this.type === 'laser') {
+                    if (closestEnemy) {
+                        closestEnemy.hp -= this.damagePerFrame;
+                        closestEnemy.hitTimer = 2; 
+                    }
+                } else {
+                    if (closestEnemy && game.frame - this.lastFire >= this.fireRate) {
+                        let finalDamage = this.damage;
+                        if (this.type === 'green' && this.level === 3) {
+                            let distRatio = Math.hypot(closestEnemy.x - this.x, closestEnemy.y - this.y) / this.range;
+                            finalDamage = this.damage * (1 + distRatio * 10);
+                        }
+                        
+                        let proj = new Projectile(this.x, this.y, closestEnemy, finalDamage, this.color);
+                        if (this.type === 'purple' && this.level === 3) {
+                            proj.splash = true;
+                            proj.splashRadius = 80;
+                        }
+                        projectiles.push(proj);
+
+                        if (this.type === 'blue' && this.level === 3) {
+                            setTimeout(() => {
+                                if (closestEnemy && enemies.includes(closestEnemy)) {
+                                    projectiles.push(new Projectile(this.x, this.y, closestEnemy, finalDamage, this.color));
+                                }
+                            }, 100);
+                        }
+                        this.lastFire = game.frame;
+                    }
+                }
+            }
+
+            draw() {
+                const distToPlayer = Math.hypot((player.x + 15) - this.x, (player.y + 15) - this.y);
+                if (distToPlayer < 120) { 
+                    ctx.beginPath(); ctx.arc(this.x, this.y, this.range, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color + '15'; ctx.fill(); 
+                    ctx.strokeStyle = this.color; ctx.lineWidth = 1; ctx.stroke();
+                }
+                
+                let pulse = Math.sin(game.frame * 0.05) * 1.5;
+
+                ctx.beginPath(); ctx.arc(this.x, this.y, 18 + pulse, 0, Math.PI * 2);
+                ctx.fillStyle = '#222'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = this.color; ctx.stroke();
+                
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center';
+                ctx.fillText('L' + this.level, this.x, this.y + 4);
+                
+                ctx.beginPath(); ctx.arc(this.x, this.y, 8, 0, Math.PI * 2);
+                ctx.fillStyle = this.color; ctx.fill();
+            }
+        }
+
+        class Enemy {
+            constructor(type = 'normal') {
+                this.type = type; this.waypointIndex = 1; 
+                this.x = currentWaypoints[0].x; this.y = currentWaypoints[0].y;
+                let hpScale = Math.pow(1.05, game.wave - 1);
+                let diffMult = game.difficulty === 'hard' ? 3.5 : (game.difficulty === 'medium' ? 2 : 1);
+
+                // MUDANÇA AQUI: Velocidade de todos os inimigos reduzida pela metade
+                if (type === 'boss') {
+                    this.radius = 40; this.speed = 0.2; this.maxHp = (100 * diffMult) * hpScale; 
+                } else if (type === 'tank') {
+                    this.radius = 25; this.speed = 0.4; this.maxHp = (30 * diffMult) * hpScale;
+                } else if (type === 'fast') {
+                    this.radius = 12; this.speed = 1.25; this.maxHp = (6 * diffMult) * hpScale;
+                } else {
+                    this.radius = 15; this.speed = 0.75; this.maxHp = (10 * diffMult) * hpScale;
+                }
+                this.hp = this.maxHp; this.reward = type === 'boss' ? 200 : (type === 'tank' ? 15 : 5);
+                this.color = type === 'boss' ? '#f00' : (type === 'tank' ? '#a0f' : (type === 'fast' ? '#f90' : '#f36'));
+                this.hitTimer = 0; 
+            }
+            draw() {
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                if (this.hitTimer > 0) ctx.fillStyle = '#ffffff';
+                else ctx.fillStyle = this.color;
+                ctx.fill();
+
+                const hbW = this.radius * 2; const hpP = Math.max(0, this.hp / this.maxHp);
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.7)'; ctx.fillRect(this.x - hbW/2, this.y - this.radius - 12, hbW, 5);
+                ctx.fillStyle = '#0f0'; ctx.fillRect(this.x - hbW/2, this.y - this.radius - 12, hbW * hpP, 5);
+            }
+            update() {
+                if (this.hitTimer > 0) this.hitTimer--;
+
+                let target = currentWaypoints[this.waypointIndex];
+                if (!target) return; 
+                let dx = target.x - this.x, dy = target.y - this.y, dist = Math.hypot(dx, dy);
+                if (dist <= this.speed) { this.x = target.x; this.y = target.y; this.waypointIndex++; }
+                else { this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed; }
+            }
+        }
+
+        class Projectile {
+            constructor(x, y, target, damage, color) {
+                // MUDANÇA AQUI: Velocidade do projétil reduzida de 24 para 12
+                this.x = x; this.y = y; this.target = target; this.speed = 12; this.damage = damage; this.radius = 4; this.color = color;
+                this.targetX = target.x; this.targetY = target.y;
+                this.reached = false;
+                this.splash = false;
+                this.splashRadius = 0;
+            }
+            draw() {
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color; ctx.fill();
+                if (this.splash) {
+                    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius + 4, 0, Math.PI * 2);
+                    ctx.strokeStyle = this.color; ctx.stroke();
+                }
+            }
+            update() {
+                if (enemies.includes(this.target)) {
+                    this.targetX = this.target.x;
+                    this.targetY = this.target.y;
+                }
+                const dx = this.targetX - this.x, dy = this.targetY - this.y, dist = Math.hypot(dx, dy);
+                if (dist <= this.speed) {
+                    this.x = this.targetX;
+                    this.y = this.targetY;
+                    this.reached = true;
+                } else {
+                    this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed;
+                }
+            }
+        }
+
+        function updateTutorial() {
+            if (game.currentLevel !== 0) return;
+
+            processTypeWriter();
+
+            if (tutorialDelay > 0) {
+                tutorialDelay--;
+                return;
+            }
+
+            const t = towers.find(tw => tw.spot === buildings[0]);
+
+            switch(tutorialStep) {
+                case 1:
+                    setDialogue("Use as teclas WASD ou as Setas para ir até a área verde e fique lá por 3 segundos.");
+                    
+                    if (Math.hypot(player.x + 15 - tutorialTarget.x, player.y + 15 - tutorialTarget.y) < tutorialTarget.radius + 15) {
+                        tutorialTarget.timer++;
+                        if (tutorialTarget.timer >= 180) { 
+                            tutorialTarget = { x: 360, y: 460, radius: 45, timer: 0 }; 
+                            tutorialStep = 1.5;
+                            tutorialDelay = 60; 
+                        }
+                    } else {
+                        tutorialTarget.timer = 0; 
+                    }
+                    break;
+                case 1.5:
+                    setDialogue("Muito bem! Você é rápido.");
+                    if (tutorialDelay <= 0) tutorialStep = 2;
+                    break;
+                case 2:
+                    setDialogue("Chegue perto do quadrado pontilhado e segure 'W' (Seta para Cima) para construir uma torre.");
+                    if (buildings[0].hasTower) {
+                        tutorialTarget = null;
+                        tutorialStep = 2.5;
+                        tutorialDelay = 90;
+                    }
+                    break;
+                case 2.5:
+                    setDialogue("Torre pronta! Vamos soltar um robô de treino.");
+                    if (tutorialDelay <= 0) {
+                        enemies.push(new Enemy('normal'));
+                        tutorialStep = 2.6;
+                    }
+                    break;
+                case 2.6:
+                    setDialogue("Olha só, a torre atira nele sozinha!");
+                    if (enemies.length === 0) {
+                        tutorialStep = 3;
+                        tutorialDelay = 60;
+                    }
+                    break;
+                case 3:
+                    setDialogue("Boa! Robô destruído.");
+                    if (tutorialDelay <= 0) tutorialStep = 3.1;
+                    break;
+                case 3.1:
+                    setDialogue("Fique em cima da torre e segure 'W' de novo para gastar dinheiro e melhorar ela (Nível 2).");
+                    if (t && t.level >= 2) {
+                        tutorialStep = 3.5;
+                        tutorialDelay = 90;
+                    }
+                    break;
+                case 3.5:
+                    setDialogue("Torre melhorada! Agora vamos soltar um robô tanque fortão.");
+                    if (tutorialDelay <= 0) {
+                        enemies.push(new Enemy('tank'));
+                        tutorialStep = 3.6;
+                    }
+                    break;
+                case 3.6:
+                    setDialogue("Viu só? O dano aumentou bastante agora.");
+                    if (enemies.length === 0) {
+                        game.money += 50; 
+                        tutorialStep = 4;
+                        tutorialDelay = 60;
+                    }
+                    break;
+                case 4:
+                    setDialogue("Excelente trabalho, soldado!");
+                    if (tutorialDelay <= 0) tutorialStep = 4.1;
+                    break;
+                case 4.1:
+                    setDialogue("Torres no Nível Máximo (3) ganham poderes especiais. Segure 'W' mais uma vez.");
+                    if (t && t.level >= 3) {
+                        tutorialStep = 4.5;
+                        tutorialDelay = 90;
+                    }
+                    break;
+                case 4.5:
+                    setDialogue("Nível Máximo! Cuidado, um grupo de robôs rápidos está vindo!");
+                    if (tutorialDelay <= 0) {
+                        let e1 = new Enemy('fast');
+                        let e2 = new Enemy('fast'); e2.y -= 80;
+                        let e3 = new Enemy('normal'); e3.y -= 160;
+                        enemies.push(e1, e2, e3);
+                        tutorialStep = 4.6;
+                    }
+                    break;
+                case 4.6:
+                    setDialogue("A torre azul no Nível 3 atira duas vezes ao mesmo tempo. Acabe com eles!");
+                    if (enemies.length === 0) {
+                        tutorialStep = 5;
+                        tutorialDelay = 90;
+                    }
+                    break;
+                case 5:
+                    setDialogue("Ufa, área limpa.");
+                    if (tutorialDelay <= 0) tutorialStep = 5.1;
+                    break;
+                case 5.1:
+                    setDialogue("Se precisar de dinheiro, segure 'S' (Seta para Baixo) na torre para vender e recuperar metade da grana.");
+                    if (!buildings[0].hasTower) {
+                        createExplosion(buildings[0].spotX + 25, buildings[0].spotY + 25, '#ffcc00', 20, 6);
+                        tutorialStep = 6;
+                        tutorialDelay = 60;
+                    }
+                    break;
+                case 6:
+                    setDialogue("Dinheiro recuperado. Sempre fique de olho na sua grana.");
+                    if (tutorialDelay <= 0) tutorialStep = 6.1;
+                    break;
+                case 6.1:
+                    setDialogue("Treino concluído! Você está pronto para o jogo real. Voltando ao menu...");
+                    document.getElementById('game-over-title').innerText = "Treino Concluído";
+                    document.getElementById('restart-btn').style.display = 'none';
+                    setTimeout(() => gameWon(), 4500);
+                    tutorialStep = 7; 
+                    break;
+            }
+        }
+
+        function updatePlayer() {
+            activeSpot = null;
+            for (let b of buildings) {
+                if (b.hasSpot && player.x >= b.spotX && player.y >= b.spotY && player.x + player.size <= b.spotX + b.spotSize && player.y + player.size <= b.spotY + b.spotSize) {
+                    activeSpot = b; break;
+                }
+            }
+            
+            let currentTower = towers.find(t => t.spot === activeSpot);
+
+            if (activeSpot) {
+                if (!activeSpot.hasTower) {
+                    let cost = activeSpot.spotType === 'blue' ? 50 : (activeSpot.spotType === 'purple' ? 100 : (activeSpot.spotType === 'laser' ? 150 : 75));
+                    if ((keys.ArrowUp || keys.w) && game.money >= cost) {
+                        activeSpot.buildTimer = (activeSpot.buildTimer || 0) + 1;
+                        if (activeSpot.buildTimer >= 90) {
+                            game.money -= cost; activeSpot.hasTower = true;
+                            towers.push(new Tower(activeSpot.spotX + 25, activeSpot.spotY + 25, activeSpot, activeSpot.spotType));
+                            activeSpot.buildTimer = 0; moneyEl.innerText = game.money;
+                            
+                            createExplosion(activeSpot.spotX + 25, activeSpot.spotY + 25, '#00ffcc', 20, 5);
+                            screenShake = 3;
+                        }
+                    } else activeSpot.buildTimer = 0;
+                } else if (currentTower) {
+                    let upgradeCost = currentTower.getUpgradeCost();
+                    if (upgradeCost > 0 && (keys.ArrowUp || keys.w) && game.money >= upgradeCost) {
+                        activeSpot.upgradeTimer = (activeSpot.upgradeTimer || 0) + 1;
+                        if (activeSpot.upgradeTimer >= 90) {
+                            currentTower.upgrade();
+                            activeSpot.upgradeTimer = 0;
+                            screenShake = 4;
+                        }
+                    } else activeSpot.upgradeTimer = 0;
+
+                    if (keys.ArrowDown || keys.s) {
+                        activeSpot.removeTimer = (activeSpot.removeTimer || 0) + 1;
+                        if (activeSpot.removeTimer >= 90) {
+                            game.money += Math.floor(currentTower.totalSpent / 2);
+                            activeSpot.hasTower = false;
+                            towers = towers.filter(t => t !== currentTower);
+                            activeSpot.removeTimer = 0; moneyEl.innerText = game.money;
+                            
+                            createExplosion(activeSpot.spotX + 25, activeSpot.spotY + 25, '#ff3366', 20, 5);
+                            screenShake = 3;
+                        }
+                    } else activeSpot.removeTimer = 0;
+                }
+            }
+
+            let isMoving = false;
+            player.state = 'idle';
+
+            if (!activeSpot || (!activeSpot.buildTimer && !activeSpot.upgradeTimer && !activeSpot.removeTimer)) {
+                if ((keys.ArrowUp || keys.w) && player.y > 0) { player.y -= player.speed; isMoving = true; player.facing = 'up'; }
+                if ((keys.ArrowDown || keys.s) && player.y < worldHeight - player.size) { player.y += player.speed; isMoving = true; player.facing = 'down'; }
+                if ((keys.ArrowLeft || keys.a) && player.x > 0) { player.x -= player.speed; isMoving = true; player.facing = 'left'; }
+                if ((keys.ArrowRight || keys.d) && player.x < worldWidth - player.size) { player.x += player.speed; isMoving = true; player.facing = 'right'; }
+            }
+
+            if (isMoving) {
+                player.state = 'walk';
+            }
+
+            if (isMoving && game.frame % 3 === 0) {
+                player.trail.push({x: player.x, y: player.y});
+                if (player.trail.length > 5) player.trail.shift();
+            } else if (!isMoving && player.trail.length > 0) {
+                player.trail.shift();
+            }
+
+            let closestE = null, closestD = player.range;
+            enemies.forEach(e => {
+                const d = Math.hypot(e.x - (player.x + 15), e.y - (player.y + 15));
+                if (d - e.radius <= closestD) { 
+                    closestD = d - e.radius; 
+                    closestE = e; 
+                }
+            });
+            
+            if (closestE && game.frame - player.lastFire >= player.fireRate) {
+                projectiles.push(new Projectile(player.x + 15, player.y + 15, closestE, player.damage, '#ffcc00'));
+                player.lastFire = game.frame;
+                screenShake = 2; 
+            }
+
+            // Manter animação de tiro por alguns frames
+            if (game.frame - player.lastFire < 15) {
+                player.state = 'shoot';
+                if (closestE) {
+                    player.facing = closestE.x < player.x ? 'left' : 'right';
+                }
+            }
+        }
+
+        function manageWaves() {
+            if (game.currentLevel === 0) return; 
+            if (game.enemiesToSpawn === 0 && game.tankToSpawn === 0 && game.bossToSpawn === 0 && game.fastToSpawn === 0 && enemies.length === 0) {
+                if (game.wave === 10) {
+                    gameWon();
+                    return;
+                }
+
+                game.isWaitingForWave = true;
+                game.waveDelayCounter++;
+                
+                if (game.waveDelayCounter >= game.waveDelay) {
+                    game.wave++;
+                    game.enemiesToSpawn = game.wave * 5;
+                    if (game.wave >= 5) game.tankToSpawn = Math.floor(game.wave / 2);
+                    if (game.wave >= 3 && game.currentLevel > 1) game.fastToSpawn = game.wave;
+                    if (game.wave === 10) game.bossToSpawn = 1;
+                    
+                    game.waveDelayCounter = 0;
+                    game.isWaitingForWave = false;
+                    waveEl.innerText = `${game.wave} / 10`;
+                }
+            }
+        }
+
+        function spawnEnemies() {
+            if (game.currentLevel === 0) return;
+            // MUDANÇA AQUI: Taxa de spawn dos inimigos mais lenta (dobro de espera)
+            let spawnRate = Math.max(60, 200 - (game.wave * 10));
+            if (game.frame % Math.floor(spawnRate) === 0) {
+                if (game.fastToSpawn > 0) { enemies.push(new Enemy('fast')); game.fastToSpawn--; }
+                else if (game.enemiesToSpawn > 0) { enemies.push(new Enemy('normal')); game.enemiesToSpawn--; }
+                else if (game.tankToSpawn > 0) { enemies.push(new Enemy('tank')); game.tankToSpawn--; }
+                else if (game.bossToSpawn > 0) { enemies.push(new Enemy('boss')); game.bossToSpawn--; }
+            }
+        }
+
+        function checkCollisions() {
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                let p = projectiles[i];
+                let hitTarget = enemies.includes(p.target) && Math.hypot(p.target.x - p.x, p.target.y - p.y) < p.target.radius + 5;
+                
+                if (p.reached || hitTarget) {
+                    if (p.splash) {
+                        enemies.forEach(e => {
+                            if (Math.hypot(e.x - p.x, e.y - p.y) < p.splashRadius) {
+                                e.hp -= p.damage;
+                                e.hitTimer = 3;
+                            }
+                        });
+                        createExplosion(p.x, p.y, p.color, 15, 6);
+                    } else {
+                        if (enemies.includes(p.target)) {
+                            p.target.hp -= p.damage; 
+                            p.target.hitTimer = 3;
+                        }
+                        createExplosion(p.x, p.y, p.color, 5, 3);
+                    }
+                    projectiles.splice(i, 1);
+                }
+            }
+            
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let enemy = enemies[i];
+                if (enemy.hp <= 0) { 
+                    game.money += enemy.reward; 
+                    moneyEl.innerText = game.money;
+                    
+                    createExplosion(enemy.x, enemy.y, enemy.color, 20, 5);
+                    floatingTexts.push(new FloatingText(enemy.x, enemy.y, '+$' + enemy.reward, '#ffcc00'));
+                    
+                    enemies.splice(i, 1); 
+                }
+                else if (enemy.waypointIndex >= currentWaypoints.length) {
+                    game.lives = Math.max(0, game.lives - (enemy.type === 'boss' ? 5 : 1));
+                    livesEl.innerText = game.lives; 
+                    
+                    screenShake = enemy.type === 'boss' ? 20 : 10;
+                    createExplosion(enemy.x, enemy.y, '#ff0000', 30, 8);
+                    
+                    enemies.splice(i, 1);
+                    if (game.lives <= 0) gameOver();
+                }
+            }
+        }
+
+        function drawMap() {
+            ctx.fillStyle = '#0f1319'; ctx.fillRect(0, 0, worldWidth, worldHeight);
+            const pathWidth = 100;
+            ctx.beginPath(); ctx.moveTo(currentWaypoints[0].x, currentWaypoints[0].y);
+            for (let i = 1; i < currentWaypoints.length; i++) ctx.lineTo(currentWaypoints[i].x, currentWaypoints[i].y);
+            ctx.strokeStyle = '#222'; ctx.lineWidth = pathWidth; ctx.lineJoin = 'round'; ctx.stroke();
+            
+            buildings.forEach(b => {
+                if(b.spotType !== 'laser') {
+                    ctx.fillStyle = b.color; ctx.fillRect(b.x, b.y, b.w, b.h);
+                    ctx.strokeStyle = '#111'; ctx.lineWidth = 2; ctx.strokeRect(b.x, b.y, b.w, b.h);
+                }
+                if (b.hasSpot && !b.hasTower) {
+                    let cost = b.spotType === 'blue' ? 50 : (b.spotType === 'purple' ? 100 : (b.spotType === 'laser' ? 150 : 75));
+                    ctx.strokeStyle = '#fff'; ctx.setLineDash([5, 5]); 
+                    ctx.strokeRect(b.spotX, b.spotY, b.spotSize, b.spotSize); ctx.setLineDash([]);
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Arial'; ctx.textAlign = 'center';
+                    ctx.fillText('$' + cost, b.spotX + 25, b.spotY + 30);
+                    ctx.fillStyle = '#0f0'; ctx.fillText('↑', b.spotX + 25, b.spotY + 15);
+                }
+            });
+
+            if (tutorialTarget) {
+                ctx.beginPath(); ctx.arc(tutorialTarget.x, tutorialTarget.y, tutorialTarget.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = '#0f0'; ctx.lineWidth = 2; ctx.setLineDash([10, 5]); ctx.stroke(); ctx.setLineDash([]);
+                ctx.fillStyle = 'rgba(0, 255, 0, 0.1)'; ctx.fill();
+
+                if (tutorialTarget.timer > 0) {
+                    ctx.beginPath();
+                    let progress = (tutorialTarget.timer / 180) * Math.PI * 2;
+                    ctx.arc(tutorialTarget.x, tutorialTarget.y, tutorialTarget.radius + 5, -Math.PI/2, -Math.PI/2 + progress);
+                    ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 4; ctx.stroke();
+                }
+            }
+        }
+
+        // --- NOVA FUNÇÃO DE VISUAIS DO TUTORIAL ---
+        function drawTutorialVisuals() {
+            if (game.currentLevel !== 0) return;
+
+            let pulse = Math.sin(game.frame * 0.15) * 8;
+            let b0 = buildings[0]; 
+
+            // Função para desenhar a seta de holograma
+            function drawFloatingArrow(x, y) {
+                ctx.fillStyle = '#00ffcc';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00ffcc';
+                ctx.beginPath();
+                ctx.moveTo(x, y + pulse);
+                ctx.lineTo(x - 12, y - 15 + pulse);
+                ctx.lineTo(x - 5, y - 15 + pulse);
+                ctx.lineTo(x - 5, y - 30 + pulse);
+                ctx.lineTo(x + 5, y - 30 + pulse);
+                ctx.lineTo(x + 5, y - 15 + pulse);
+                ctx.lineTo(x + 12, y - 15 + pulse);
+                ctx.closePath();
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            // Função para desenhar as Teclas de Ação
+            function drawKey(x, y, keyChar) {
+                ctx.fillStyle = 'rgba(10, 10, 15, 0.9)';
+                ctx.strokeStyle = '#00ffcc';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                if (ctx.roundRect) {
+                    ctx.roundRect(x - 16, y - 16, 32, 32, 6);
+                } else {
+                    ctx.rect(x - 16, y - 16, 32, 32);
+                }
+                ctx.fill(); ctx.stroke();
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 18px "Segoe UI"';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(keyChar, x, y);
+            }
+
+            // --- LÓGICA DAS DICAS VISUAIS ---
+            if (tutorialStep === 1 && tutorialTarget) {
+                // Seta apontando pro círculo verde
+                drawFloatingArrow(tutorialTarget.x, tutorialTarget.y - tutorialTarget.radius - 20);
+                
+                // Teclas "WASD" flutuando em volta do player
+                drawKey(player.x + 15, player.y - 40, 'W');
+                drawKey(player.x - 25, player.y + 15, 'A');
+                drawKey(player.x + 15, player.y + 70, 'S');
+                drawKey(player.x + 55, player.y + 15, 'D');
+            } 
+            else if (tutorialStep === 2 && !buildings[0].hasTower) {
+                // Seta na base para construir
+                drawFloatingArrow(b0.spotX + 25, b0.spotY - 20);
+                if (activeSpot === b0) drawKey(b0.spotX + 25, b0.spotY - 45, 'W');
+            } 
+            else if ((tutorialStep === 3.1 || tutorialStep === 4.1) && buildings[0].hasTower) {
+                // Seta para fazer Upgrade
+                drawFloatingArrow(b0.spotX + 25, b0.spotY - 35);
+                if (activeSpot === b0) drawKey(b0.spotX + 25, b0.spotY - 70, 'W');
+            } 
+            else if (tutorialStep === 5.1 && buildings[0].hasTower) {
+                // Seta para Vender
+                drawFloatingArrow(b0.spotX + 25, b0.spotY - 35);
+                if (activeSpot === b0) drawKey(b0.spotX + 25, b0.spotY - 70, 'S');
+            }
+        }
+
+        function drawUI() {
+            if (activeSpot) {
+                let currentTower = towers.find(t => t.spot === activeSpot);
+                ctx.save(); ctx.translate(-camera.x, -camera.y);
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center';
+                if (activeSpot.hasTower && currentTower) {
+                    let cost = currentTower.getUpgradeCost();
+                    if (cost > 0) {
+                        ctx.fillText('Upgrade: $' + cost, activeSpot.spotX + 25, activeSpot.spotY - 10);
+                        if (activeSpot.upgradeTimer > 0) {
+                            ctx.fillStyle = '#0fc'; ctx.fillRect(activeSpot.spotX, activeSpot.spotY - 5, 50 * (activeSpot.upgradeTimer/90), 5);
+                        }
+                    }
+                    ctx.fillStyle = '#f36'; ctx.fillText('Vender: $' + Math.floor(currentTower.totalSpent/2), activeSpot.spotX + 25, activeSpot.spotY + 65);
+                    if (activeSpot.removeTimer > 0) {
+                        ctx.fillRect(activeSpot.spotX, activeSpot.spotY + 70, 50 * (activeSpot.removeTimer/90), 5);
+                    }
+                } else if (!activeSpot.hasTower && activeSpot.buildTimer > 0) {
+                    ctx.fillStyle = '#0fc'; ctx.fillRect(activeSpot.spotX, activeSpot.spotY - 5, 50 * (activeSpot.buildTimer/90), 5);
+                }
+                ctx.restore();
+            }
+        }
+
+        function updateCamera() {
+            camera.x = Math.max(0, Math.min(player.x + 15 - canvas.width / 2, worldWidth - canvas.width));
+            camera.y = Math.max(0, Math.min(player.y + 15 - canvas.height / 2, worldHeight - canvas.height));
+        }
+
+        function gameLoop(timestamp) {
+            if (!game.isRunning) return;
+            requestAnimationFrame(gameLoop);
+            game.frame++;
+            
+            updatePlayer(); updateCamera(); manageWaves(); spawnEnemies();
+            updateTutorial();
+            
+            enemies.forEach(e => e.update()); 
+            projectiles.forEach(p => p.update()); 
+            towers.forEach(t => t.update());
+            particles.forEach(p => p.update());
+            floatingTexts.forEach(ft => ft.update());
+            
+            particles = particles.filter(p => p.life > 0);
+            floatingTexts = floatingTexts.filter(ft => ft.life > 0);
+
+            checkCollisions();
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save(); 
+            
+            let shakeX = (Math.random() - 0.5) * screenShake;
+            let shakeY = (Math.random() - 0.5) * screenShake;
+            ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
+            
+            screenShake *= 0.9;
+            if (screenShake < 0.5) screenShake = 0;
+
+            drawMap(); 
+            towers.forEach(t => t.draw()); 
+            enemies.forEach(e => e.draw()); 
+            projectiles.forEach(p => p.draw());
+            particles.forEach(p => p.draw());
+            floatingTexts.forEach(ft => ft.draw());
+
+            // Rastro Digital Sci-fi (Deixei para manter o estilo cyberpunk!)
+            player.trail.forEach((t, i) => {
+                ctx.globalAlpha = (i + 1) / player.trail.length * 0.3;
+                // Deixando o rastro um pouco mais escuro/transparente para focar no sprite
+                ctx.fillStyle = '#005544';
+                ctx.fillRect(t.x, t.y, player.size, player.size);
+            });
+            ctx.globalAlpha = 1.0;
+
+            // Desenho do círculo de alcance
+            ctx.beginPath(); 
+            ctx.arc(player.x + 15, player.y + 15, player.range, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 255, 204, 0.08)'; 
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0, 255, 204, 0.4)'; 
+            ctx.lineWidth = 1; 
+            ctx.stroke();
+
+            // --- LÓGICA DE DESENHO DO SPRITE DO JOGADOR ---
+            // MUDANÇA AQUI: Atualiza os frames a cada 12 frames (em vez de 6) para animar mais devagar
+            if (game.frame % 12 === 0) {
+                if (player.state === 'walk') {
+                    player.frameX = (player.frameX + 1) % 6; // 6 frames nas linhas 0 e 1
+                    player.frameY = (player.facing === 'down' || player.facing === 'up') ? 0 : 1;
+                } else if (player.state === 'shoot') {
+                    player.frameX = (player.frameX + 1) % 6; // A linha de tiro tem 6 frames
+                    player.frameY = 2;
+                } else {
+                    player.frameX = 0; // Posição Parado
+                    player.frameY = (player.facing === 'down' || player.facing === 'up') ? 0 : 1;
+                }
+            }
+
+            let playerPulse = Math.sin(game.frame * 0.1) * 2;
+            
+            ctx.save();
+            let drawX = player.x + player.size / 2;
+            let drawY = player.y + player.size / 2;
+            
+            // Tamanho base do sprite e escala para ficar maior que o quadrado hitbox
+            let baseScale = 0.6; 
+            let finalScale = baseScale + (playerPulse * 0.01); // Animação de respiração
+            
+            ctx.translate(drawX, drawY);
+            
+            // Inverte a imagem se estiver a olhar para a esquerda
+            if (player.facing === 'left') {
+                ctx.scale(-1, 1);
+            }
+
+            // Usa o sprite processado (sem fundo) ou a imagem original
+            let spriteToDraw = processedSprite || playerSprite;
+
+            if (spriteToDraw && spriteToDraw.width > 0 && !player.fallback) {
+                // O Sprite tem 6 colunas e 3 linhas
+                let spriteW = spriteToDraw.width / 6;
+                let spriteH = spriteToDraw.height / 3;
+                
+                ctx.drawImage(
+                    spriteToDraw,
+                    player.frameX * spriteW, player.frameY * spriteH, spriteW, spriteH,
+                    - (spriteW * finalScale) / 2, - (spriteH * finalScale) / 2, 
+                    spriteW * finalScale, spriteH * finalScale
+                );
+            } else {
+                // FALLBACK VISUAL (Quando a imagem local não carrega no preview)
+                ctx.fillStyle = '#1a1a24'; // Cor da armadura
+                ctx.shadowBlur = 10; ctx.shadowColor = '#00ffcc44';
+                ctx.fillRect(-player.size/2 - playerPulse/2, -player.size/2 - playerPulse/2, player.size + playerPulse, player.size + playerPulse);
+                
+                // Visor Cibernético
+                ctx.fillStyle = '#00ffcc';
+                ctx.shadowBlur = 15; ctx.shadowColor = '#00ffcc';
+                if (player.facing === 'down') {
+                    ctx.fillRect(-8, -4, 16, 6);
+                } else if (player.facing === 'right' || player.facing === 'left') {
+                    ctx.fillRect(2, -4, 10, 6); // O scale(-1, 1) espelha automaticamente a esquerda
+                }
+                ctx.shadowBlur = 0; 
+            }
+            ctx.restore();
+            
+            // Desenha as setas e dicas visuais do tutorial por cima dos objetos do mapa
+            drawTutorialVisuals();
+            
+            ctx.restore(); // Restaura a câmera geral
+            
+            // UI HUD Overlay
+            if (game.isWaitingForWave && game.currentLevel !== 0) {
+                let secondsLeft = Math.ceil((game.waveDelay - game.waveDelayCounter) / 60);
+                let nextWave = game.wave + 1;
+                
+                ctx.textAlign = 'center';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#000';
+                
+                if (nextWave === 10) {
+                    ctx.fillStyle = '#ff0000';
+                    ctx.font = 'bold 32px "Segoe UI"';
+                    ctx.shadowColor = '#ff0000';
+                    ctx.shadowBlur = 20;
+                    if (game.frame % 30 < 15) {
+                        ctx.fillText(`⚠️ ALERTA: MÁQUINA DE CERCO SE APROXIMA! ⚠️`, canvas.width / 2, 110);
+                    }
+                    ctx.fillStyle = '#ffcc00';
+                    ctx.font = 'bold 24px "Segoe UI"';
+                    ctx.shadowColor = '#000';
+                    ctx.shadowBlur = 10;
+                    ctx.fillText(`Ataque final em: ${secondsLeft}`, canvas.width / 2, 150);
+                } else {
+                    ctx.fillStyle = '#00ffcc';
+                    ctx.font = 'bold 28px "Segoe UI"';
+                    ctx.fillText(`Onda ${nextWave} começa em: ${secondsLeft}`, canvas.width / 2, 110);
+                }
+                
+                ctx.shadowBlur = 0;
+                ctx.textAlign = 'left';
+            }
+
+            drawUI();
+        }
+
+        function toggleSpeed() {
+            game.isDoubleSpeed = !game.isDoubleSpeed;
+            // MUDANÇA AQUI: O botão de acelerar agora alterna entre velocidade 4 e 2 (era 8 e 4)
+            player.speed = game.isDoubleSpeed ? 4 : 2; 
+            document.getElementById('speed-btn').innerText = game.isDoubleSpeed ? '▶▶ 2x Vel' : '▶ 1x Vel';
+        }
+
+        function startLevel(lvl) {
+            game.currentLevel = lvl; menuScreen.style.display = 'none';
+            gameContainer.style.display = 'block'; resizeCanvas(); reiniciarJogo();
+        }
+
+        function backToMenu() {
+            game.isRunning = false; gameContainer.style.display = 'none';
+            menuScreen.style.display = 'flex'; gameOverScreen.style.display = 'none';
+            tutorialBox.style.display = 'none';
+        }
+
+        function gameOver() {
+            game.isRunning = false; document.getElementById('game-over-title').innerText = "O Núcleo Foi Comprometido!";
+            finalMoneyEl.innerText = game.money; gameOverScreen.style.display = 'flex';
+        }
+
+        function gameWon() {
+            game.isRunning = false; document.getElementById('game-over-title').innerText = "Núcleo Defendido!";
+            finalMoneyEl.innerText = game.money; gameOverScreen.style.display = 'flex';
+        }
+
+        function reiniciarJogo() {
+            game.lives = 5; game.money = 200; game.frame = 0;
+            
+            // CORREÇÃO: Resetar a memória do jogador ao iniciar nova fase
+            player.lastFire = 0;
+            player.state = 'idle';
+            player.trail = [];
+            
+            game.wave = 0; 
+            game.enemiesToSpawn = 0; game.tankToSpawn = 0; game.bossToSpawn = 0; game.fastToSpawn = 0;
+            game.waveDelayCounter = 0; game.isRunning = true;
+            game.isWaitingForWave = true;
+            
+            enemies = []; projectiles = []; towers = []; activeSpot = null;
+            particles = []; floatingTexts = []; screenShake = 0;
+            
+            tutorialDelay = 0;
+            typeWriter.fullText = "";
+            tutorialMsg.innerText = "";
+            document.getElementById('restart-btn').style.display = 'inline-block';
+            
+            setupLevelData(game.currentLevel);
+            livesEl.innerText = game.lives; moneyEl.innerText = game.money; waveEl.innerText = `1 / 10`;
+            gameOverScreen.style.display = 'none'; requestAnimationFrame(gameLoop);
+            
+        }
+    </script>
+</body>
+</html>
