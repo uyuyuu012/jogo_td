@@ -323,7 +323,7 @@
             <div style="display: flex; align-items: center;">
                 <div id="commander-avatar"></div>
                 <div style="flex-grow: 1;">
-                    <div class="dialogue-title">Comandante Kael</div>
+                    <div class="dialogue-title">Comandante Gabriel</div>
                     <p id="tutorial-msg"></p>
                 </div>
             </div>
@@ -354,7 +354,7 @@ Os robôs enlouqueceram e decidiram dominar o mundo.
 Eles destruíram nossas cidades e tomaram o controle de quase tudo.
 
 Você é um soldado e nossa última esperança.
-Seu instrutor, o Comandante Kael, vai te ensinar a lutar.
+Seu instrutor, o Comandante Gabriel, vai te ensinar a lutar.
 
 Nossa missão é proteger as bases de energia que sobraram.
 Os robôs estão vindo.
@@ -801,122 +801,111 @@ Boa sorte, soldado!`;
 
         class Enemy {
             constructor(type = 'normal') {
-                this.animationStep = 0; // Adicione isso no constructor
-                this.type = type; this.waypointIndex = 1;
+                this.type = type; this.waypointIndex = 1; 
                 this.x = currentWaypoints[0].x; this.y = currentWaypoints[0].y;
+                
                 let hpScale = Math.pow(1.05, game.wave - 1);
-
                 let diffMult = game.difficulty === 'hard' ? 2.5 : (game.difficulty === 'medium' ? 1.5 : 1.0);
-
-                if (type === 'boss') {
-                    this.radius = 40; this.speed = 0.2; this.maxHp = (100 * diffMult) * hpScale;
-                } else if (type === 'tank') {
-                    this.radius = 25; this.speed = 0.4; this.maxHp = (30 * diffMult) * hpScale;
-                } else if (type === 'fast') {
-                    this.radius = 12; this.speed = 1.25; this.maxHp = (6 * diffMult) * hpScale;
-                } else {
-                    this.radius = 15; this.speed = 0.75; this.maxHp = (10 * diffMult) * hpScale;
-                }
-                this.hp = this.maxHp; this.reward = type === 'boss' ? 200 : (type === 'tank' ? 15 : 5);
-                this.color = type === 'boss' ? '#f00' : (type === 'tank' ? '#a0f' : (type === 'fast' ? '#f90' : '#f36'));
-                this.hitTimer = 0;
-
+                
+                if (type === 'boss') { this.radius = 40; this.speed = 0.2; this.maxHp = (100 * diffMult) * hpScale; } 
+                else if (type === 'tank') { this.radius = 25; this.speed = 0.4; this.maxHp = (30 * diffMult) * hpScale; } 
+                else if (type === 'fast') { this.radius = 12; this.speed = 1.25; this.maxHp = (6 * diffMult) * hpScale; } 
+                else { this.radius = 15; this.speed = 0.75; this.maxHp = (10 * diffMult) * hpScale; }
+                
+                this.hp = this.maxHp; 
+                this.reward = type === 'boss' ? 200 : (type === 'tank' ? 15 : 5); 
+                this.color = type === 'boss' ? '#f00' : (type === 'tank' ? '#a0f' : (type === 'fast' ? '#f90' : '#f36')); 
+                this.hitTimer = 0; 
+                
                 // Lógica de Animação do Inimigo
-                this.frameX = Math.floor(Math.random() * 6);
+                this.animationStep = 0; 
+                this.frameX = 0; 
                 this.frameY = 0;
                 this.facing = 'down';
+                
+                // Lista de Frames Restaurada perfeitamente
+                this.frameSequences = {
+                    'down': [1, 0, 1, 2],
+                    'left': [1, 0, 1, 2],
+                    'right': [1, 0, 1, 2],
+                    'up':   [1, 0, 1, 2]
+                };
             }
-
+            
             draw() {
                 let spriteToDraw = processedEnemySprite || enemySprite1;
-
-                // Posição base da barra de vida (caso o sprite não carregue)
-                let healthBarY = this.y - this.radius - 12;
-
+                let healthBarY = this.y - this.radius - 12; 
+                
                 if (spriteToDraw && spriteToDraw.width > 0) {
-                    ctx.save();
-                    ctx.translate(this.x, this.y);
-
-                    let filterStr = '';
-                    if (this.hitTimer > 0) filterStr += 'brightness(300%) ';
-
-                    if (this.type === 'fast') filterStr += 'hue-rotate(50deg) ';
-                    else if (this.type === 'tank') filterStr += 'hue-rotate(250deg) ';
-                    else if (this.type === 'boss') filterStr += 'saturate(200%) drop-shadow(0 0 15px red) ';
-
+                    ctx.save(); ctx.translate(this.x, this.y);
+                    
+                    let filterStr = ''; 
+                    if (this.hitTimer > 0) filterStr += 'brightness(300%) '; 
+                    if (this.type === 'fast') filterStr += 'hue-rotate(50deg) '; 
+                    else if (this.type === 'tank') filterStr += 'hue-rotate(250deg) '; 
+                    else if (this.type === 'boss') filterStr += 'saturate(200%) drop-shadow(0 0 15px red) '; 
                     if (filterStr !== '') ctx.filter = filterStr.trim();
-
-                    let cols = 6;
-                    let rows = 4;
-
-                    let sW = spriteToDraw.width / cols;
-                    let sH = spriteToDraw.height / rows;
-
-                    let scale = (this.radius * 4.0) / Math.max(sW, sH);
-
-                    let offsetX = - (sW * scale) / 2;
-                    let offsetY = - (sH * scale) + this.radius - 5;
-
-                    // Atualizamos o eixo Y da barra de vida para ficar dinamicamente 10px acima do topo real do sprite
+                    
+                    let cols = 8, rows = 4; 
+                    let sW = spriteToDraw.width / cols, sH = spriteToDraw.height / rows; 
+                    let scale = (this.radius * 4.0) / Math.max(sW, sH); 
+                    let offsetX = - (sW * scale) / 2, offsetY = - (sH * scale) + this.radius - 5; 
+                    
                     healthBarY = this.y + offsetY - 10;
-
-                    let actualFrameY = Math.min(this.frameY, rows - 1);
-
-                    ctx.drawImage(
-                        spriteToDraw,
-                        this.frameX * sW, actualFrameY * sH, sW, sH,
-                        offsetX, offsetY,
-                        sW * scale, sH * scale
-                    );
-
+                    let actualFrameY = Math.min(this.frameY, rows - 1); 
+                    
+                    ctx.drawImage(spriteToDraw, this.frameX * sW, actualFrameY * sH, sW, sH, offsetX, offsetY, sW * scale, sH * scale );
                     ctx.restore();
-                } else {
-                    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                    if (this.hitTimer > 0) ctx.fillStyle = '#ffffff';
-                    else ctx.fillStyle = this.color;
-                    ctx.fill();
+                } else { 
+                    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); 
+                    if (this.hitTimer > 0) ctx.fillStyle = '#ffffff'; else ctx.fillStyle = this.color; 
+                    ctx.fill(); 
                 }
-
-                // Desenha a barra de vida na posição calculada (fora do translate do inimigo)
-                const hbW = this.radius * 2; const hpP = Math.max(0, this.hp / this.maxHp);
-                ctx.fillStyle = 'rgba(255, 0, 0, 0.7)'; ctx.fillRect(this.x - hbW / 2, healthBarY, hbW, 5);
-                ctx.fillStyle = '#0f0'; ctx.fillRect(this.x - hbW / 2, healthBarY, hbW * hpP, 5);
+                
+                const hbW = this.radius * 2, hpP = Math.max(0, this.hp / this.maxHp); 
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.7)'; ctx.fillRect(this.x - hbW/2, healthBarY, hbW, 5); 
+                ctx.fillStyle = '#0f0'; ctx.fillRect(this.x - hbW/2, healthBarY, hbW * hpP, 5);
             }
-
+            
             update() {
                 if (this.hitTimer > 0) this.hitTimer--;
-
-                // Substitua este bloco dentro da função update() do Enemy:
+                
+                let target = currentWaypoints[this.waypointIndex]; 
+                if (!target) return; 
+                
+                let dx = target.x - this.x, dy = target.y - this.y, dist = Math.hypot(dx, dy);
+                
+                if (Math.abs(dx) > Math.abs(dy)) { 
+                    this.facing = dx > 0 ? 'right' : 'left'; 
+                } else { 
+                    this.facing = dy > 0 ? 'down' : 'up'; 
+                }
+                
+                // ==============================================================
+                // MAPEAMENTO DAS DIREÇÕES:
+                // Agora o código utiliza novamente as linhas (Eixo Y).
+                // O padrão RPG Maker (8x4) costuma ser: 0=Baixo, 1=Esquerda, 2=Direita, 3=Cima.
+                // Troque apenas estes 4 números se eles continuarem virados para o lado errado!
+                // ==============================================================
+                const linhasDaImagem = {
+                    'down': 0,   
+                    'left': 1,   
+                    'right': 2,  
+                    'up': 3      
+                };
+                
+                this.frameY = linhasDaImagem[this.facing];
+                
+                // Aqui a animação corre nas 8 colunas (de 0 a 7)
                 if (game.frame % 4 === 0) {
-                    // Escolha aqui EXATAMENTE quais colunas você quer usar (de 0 a 5)
-                    let sequence = [0, 1];
-
-                    this.animationStep = (this.animationStep + 1) % sequence.length;
-                    this.frameX = sequence[this.animationStep];
+                    this.animationStep = (this.animationStep + 1) % 8; // 8 colunas de animação
+                    this.frameX = this.animationStep;
                 }
-
-                let target = currentWaypoints[this.waypointIndex];
-                if (!target) return;
-
-                let dx = target.x - this.x;
-                let dy = target.y - this.y;
-                let dist = Math.hypot(dx, dy);
-
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    this.facing = dx > 0 ? 'right' : 'left';
-                    this.frameY = dx > 0 ? 2 : 1;
-                } else {
-                    this.facing = dy > 0 ? 'down' : 'up';
-                    this.frameY = dy > 0 ? 0 : 3;
-                }
-
-                if (dist <= this.speed) {
-                    this.x = target.x;
-                    this.y = target.y;
-                    this.waypointIndex++;
-                } else {
-                    this.x += (dx / dist) * this.speed;
-                    this.y += (dy / dist) * this.speed;
+                
+                if (dist <= this.speed) { 
+                    this.x = target.x; this.y = target.y; this.waypointIndex++; 
+                } else { 
+                    this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed; 
                 }
             }
         }
