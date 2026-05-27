@@ -19,8 +19,8 @@
         .levels-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
         .level-card { width: 130px; height: 130px; background: #1a1a1e; border: 2px solid #333; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; }
         .level-card.unlocked:hover { border-color: #00ffcc; transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0, 255, 204, 0.2); }
-        #game-container { position: relative; overflow: hidden; width: 100vw; height: 100vh; display: none; background-color: #0f1319; }
-        canvas { display: block; background-color: transparent; }
+        #game-container { position: relative; box-shadow: 0 0 30px rgba(0, 255, 204, 0.3); border: 2px solid #222; border-radius: 8px; overflow: hidden; width: 95vw; height: 85vh; display: none; }
+        canvas { display: block; background-color: #000; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; padding: 20px; display: flex; justify-content: space-between; pointer-events: none; font-size: 22px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,1); z-index: 50; background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%); box-sizing: border-box; }
         #tutorial-dialogue { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(26, 26, 30, 0.95); border: 2px solid #00ffcc; padding: 20px 30px; border-radius: 15px; min-width: 60%; max-width: 80%; z-index: 60; display: none; box-shadow: 0 0 20px rgba(0, 255, 204, 0.3); text-align: left; }
         #commander-avatar { width: 60px; height: 60px; background-color: #00ff00; border: 3px solid #00ffcc; border-radius: 8px; margin-right: 20px; box-shadow: 0 0 15px rgba(0, 255, 0, 0.4); flex-shrink: 0; }
@@ -75,7 +75,7 @@
             <div style="display: flex; align-items: center;">
                 <div id="commander-avatar"></div>
                 <div style="flex-grow: 1;">
-                    <div class="dialogue-title">Comandante Kael</div>
+                    <div class="dialogue-title">Comandante Gabriel</div>
                     <p id="tutorial-msg"></p>
                 </div>
             </div>
@@ -160,51 +160,33 @@ Boa sorte, soldado!`;
                 tCtx.putImageData(imgData, 0, 0); 
                 processedSprite = tempCanvas; 
             } catch(e) { 
-                console.warn("Aviso de CORS: Não foi possível remover o fundo no preview online."); 
+                console.warn("Aviso de CORS: Não foi possível remover o fundo."); 
                 processedSprite = playerSprite; 
             } 
         };
         
-        playerSprite.onerror = function() { 
-            console.warn("Aviso de Preview: A imagem local não foi encontrada neste ambiente online. Ativando visual de segurança."); 
-            player.fallback = true; 
-        };
-        
         playerSprite.src = '../src/img/player-td2.png'; 
 
-        const enemySprite1 = new Image(); 
-        enemySprite1.crossOrigin = "Anonymous"; 
-        let processedEnemySprite = null; 
-        
-        enemySprite1.onload = function() { 
-            const tempCanvas = document.createElement('canvas'); 
-            tempCanvas.width = enemySprite1.width; 
-            tempCanvas.height = enemySprite1.height; 
-            const tCtx = tempCanvas.getContext('2d'); 
-            tCtx.drawImage(enemySprite1, 0, 0); 
-            try { 
-                const imgData = tCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height); 
-                const data = imgData.data; 
-                for (let i = 0; i < data.length; i += 4) { 
-                    if (data[i] < 15 && data[i+1] < 15 && data[i+2] < 15) data[i+3] = 0; 
-                } 
-                tCtx.putImageData(imgData, 0, 0); 
-                processedEnemySprite = tempCanvas; 
-            } catch(e) { 
-                processedEnemySprite = enemySprite1; 
-            } 
-        };
-        
-        enemySprite1.src = './src/img/inimigo-2.png'; 
+        // NOVO SISTEMA DE IMAGENS SEPARADAS PARA O INIMIGO
+        const enemyFrames = { up: [], down: [], left: [], right: [] };
+        const totalFramesPerDirection = 2; // Agora são 2 frames por direção (0 e 1)
+
+        // Carrega as imagens automaticamente: inimigo-2down0.png, inimigo-2down1.png...
+        ['up', 'down', 'left', 'right'].forEach(dir => {
+            for (let i = 0; i < totalFramesPerDirection; i++) {
+                let img = new Image();
+                img.src = `../src/img/inimigo-2${dir}${i}.png`; // Procura pelo seu novo formato exato
+                enemyFrames[dir].push(img);
+            }
+        });
 
         let worldWidth = 1000, worldHeight = 1100, camera = { x: 0, y: 0 };
         let currentWaypoints = [], tutorialStep = 0, tutorialTarget = null, tutorialDelay = 0;
         let screenShake = 0, particles = [], floatingTexts = [];
         let typeWriter = { fullText: "", currentText: "", index: 0, timer: 0, speed: 1 };
         
-        // VARIÁVEIS PARA CONTROLE DE TEMPO (FPS)
         let lastTime = 0, accumulator = 0;
-        const frameInterval = 1000 / 60; // Força 60 atualizações por segundo
+        const frameInterval = 1000 / 60; 
         
         function setDialogue(text) { 
             if (typeWriter.fullText !== text) { 
@@ -238,8 +220,8 @@ Boa sorte, soldado!`;
 
         function resizeCanvas() { 
             if (gameContainer.clientWidth > 0) { 
-                canvas.width = window.innerWidth; 
-                canvas.height = window.innerHeight; 
+                canvas.width = gameContainer.clientWidth; 
+                canvas.height = gameContainer.clientHeight; 
             } 
         }
         window.addEventListener('resize', resizeCanvas);
@@ -387,13 +369,13 @@ Boa sorte, soldado!`;
                 let dmgMult = game.difficulty === 'hard' ? 1.2 : (game.difficulty === 'easy' ? 0.8 : 1.0); 
                 
                 if (this.type === 'blue') { 
-                    this.range = 220; this.fireRate = 30; this.baseDamage = 3; this.color = '#3366ff'; this.totalSpent = 50; 
+                    this.range = 220; this.fireRate = 30; this.baseDamage = 4; this.color = '#3366ff'; this.totalSpent = 50; 
                 } else if (this.type === 'purple') { 
                     this.range = 200; this.fireRate = 200; this.baseDamage = 25; this.color = '#aa00ff'; this.totalSpent = 100; 
                 } else if (this.type === 'laser') { 
-                    this.range = 280; this.baseDamagePerFrame = 4/60; this.color = '#00ffff'; this.totalSpent = 150; 
+                    this.range = 280; this.baseDamagePerFrame = 5/60; this.color = '#00ffff'; this.totalSpent = 150; 
                 } else { 
-                    this.range = 300; this.fireRate = 150; this.baseDamage = 20; this.color = '#00ffcc'; this.totalSpent = 75; 
+                    this.range = 300; this.fireRate = 120; this.baseDamage = 25; this.color = '#00ffcc'; this.totalSpent = 75; 
                 } 
                 
                 if (this.baseDamage) this.damage = this.baseDamage * dmgMult; 
@@ -427,11 +409,11 @@ Boa sorte, soldado!`;
                     
                     let dmgMult = game.difficulty === 'hard' ? 1.2 : (game.difficulty === 'easy' ? 0.8 : 1.0); 
                     
-                    if (this.type === 'blue' && this.level === 2) this.damage = 5 * dmgMult; 
-                    if (this.type === 'green' && this.level === 2) { this.range = 400; this.damage = 35 * dmgMult; } 
-                    if (this.type === 'purple' && this.level === 2) this.damage = 45 * dmgMult; 
-                    if (this.type === 'laser' && this.level === 2) this.damagePerFrame = (8/60) * dmgMult; 
-                    if (this.type === 'laser' && this.level === 3) { this.damagePerFrame = (18/60) * dmgMult; this.range = 350; } 
+                    if (this.type === 'blue' && this.level === 2) this.damage = 8 * dmgMult; 
+                    if (this.type === 'green' && this.level === 2) { this.range = 400; this.damage = 45 * dmgMult; } 
+                    if (this.type === 'purple' && this.level === 2) this.damage = 25 * dmgMult; 
+                    if (this.type === 'laser' && this.level === 2) this.damagePerFrame = (12/60) * dmgMult; 
+                    if (this.type === 'laser' && this.level === 3) { this.damagePerFrame = (25/60) * dmgMult; this.range = 350; } 
                     return true; 
                 } 
                 return false; 
@@ -459,7 +441,7 @@ Boa sorte, soldado!`;
                         let proj = new Projectile(this.x, this.y, closestEnemy, finalDamage, this.color); 
                         if (this.type === 'purple' && this.level === 3) { 
                             proj.splash = true; 
-                            proj.splashRadius = 60; 
+                            proj.splashRadius = 80; 
                         } 
                         projectiles.push(proj); 
                         if (this.type === 'blue' && this.level === 3) { 
@@ -495,14 +477,13 @@ Boa sorte, soldado!`;
                 this.type = type; this.waypointIndex = 1; 
                 this.x = currentWaypoints[0].x; this.y = currentWaypoints[0].y;
                 
-                // Balanceamento: Escala de 15% por onda em vez de 5%, e multiplicador base ajustado
-                let hpScale = Math.pow(1.15, game.wave - 1);
-                let diffMult = game.difficulty === 'hard' ? 1.5 : (game.difficulty === 'medium' ? 1.0 : 0.8);
+                let hpScale = Math.pow(1.05, game.wave - 1);
+                let diffMult = game.difficulty === 'hard' ? 2.5 : (game.difficulty === 'medium' ? 1.5 : 1.0);
                 
-                if (type === 'boss') { this.radius = 40; this.speed = 0.2; this.maxHp = (350 * diffMult) * hpScale; } 
-                else if (type === 'tank') { this.radius = 25; this.speed = 0.4; this.maxHp = (80 * diffMult) * hpScale; } 
-                else if (type === 'fast') { this.radius = 12; this.speed = 1.25; this.maxHp = (15 * diffMult) * hpScale; } 
-                else { this.radius = 15; this.speed = 0.75; this.maxHp = (25 * diffMult) * hpScale; }
+                if (type === 'boss') { this.radius = 40; this.speed = 0.2; this.maxHp = (100 * diffMult) * hpScale; } 
+                else if (type === 'tank') { this.radius = 25; this.speed = 0.4; this.maxHp = (30 * diffMult) * hpScale; } 
+                else if (type === 'fast') { this.radius = 12; this.speed = 1.25; this.maxHp = (6 * diffMult) * hpScale; } 
+                else { this.radius = 15; this.speed = 0.75; this.maxHp = (10 * diffMult) * hpScale; }
                 
                 this.hp = this.maxHp; 
                 this.reward = type === 'boss' ? 200 : (type === 'tank' ? 15 : 5); 
@@ -510,34 +491,15 @@ Boa sorte, soldado!`;
                 this.hitTimer = 0; 
                 
                 this.animationStep = 0; 
-                this.frameX = 0; 
-                this.frameY = 0;
                 this.facing = 'down';
-
-                // ==============================================================
-                // CONFIGURAÇÃO UNIVERSAL DA IMAGEM DO INIMIGO
-                // ==============================================================
-                this.spriteCols = 8.2; // Mude para o número total de colunas na sua imagem
-                this.spriteRows = 4; // Mude para o número total de linhas na sua imagem
-                
-                // Para cada lado (down, left, right, up):
-                // 'row': a linha onde a animação está (0 para a primeira linha, 1 para a segunda)
-                // 'frames': uma lista com as colunas exatas que formam a caminhada desse lado.
-                // Exemplo abaixo: usa a linha 0 para Cima/Baixo e linha 1 para Esquerda/Direita.
-                //apenas para teste
-                this.animConfig = {
-                    'down':  { row: 3, frames: [1.9, 1.9, 1.9, 1.9] },
-                    'up':    { row: 2, frames: [1.9, 1.9, 1.9, 1.9] },
-                    'left':  { row: 1, frames: [1.9, 1.9, 1.9, 1.9] },
-                    'right': { row: 0, frames: [1.9, 1.9, 1.9, 1.9] }
-                };
             }
             
             draw() {
-                let spriteToDraw = processedEnemySprite || enemySprite1;
+                let framesArray = enemyFrames[this.facing];
+                let spriteToDraw = (framesArray && framesArray.length > 0) ? framesArray[this.animationStep] : null;
                 let healthBarY = this.y - this.radius - 12; 
                 
-                if (spriteToDraw && spriteToDraw.width > 0) {
+                if (spriteToDraw && spriteToDraw.complete && spriteToDraw.width > 0) {
                     ctx.save(); ctx.translate(this.x, this.y);
                     
                     let filterStr = ''; 
@@ -547,17 +509,13 @@ Boa sorte, soldado!`;
                     else if (this.type === 'boss') filterStr += 'saturate(200%) drop-shadow(0 0 15px red) '; 
                     if (filterStr !== '') ctx.filter = filterStr.trim();
                     
-                    // Utiliza os valores que você configurou no construtor
-                    let cols = this.spriteCols, rows = this.spriteRows; 
-                    
-                    let sW = spriteToDraw.width / cols, sH = spriteToDraw.height / rows; 
-                    let scale = (this.radius * 4.0) / Math.max(sW, sH); 
-                    let offsetX = - (sW * scale) / 2, offsetY = - (sH * scale) + this.radius - 5; 
+                    let scale = (this.radius * 4.0) / Math.max(spriteToDraw.width, spriteToDraw.height); 
+                    let offsetX = - (spriteToDraw.width * scale) / 2; 
+                    let offsetY = - (spriteToDraw.height * scale) + this.radius - 5; 
                     
                     healthBarY = this.y + offsetY - 10;
-                    let actualFrameY = Math.min(this.frameY, rows - 1); 
                     
-                    ctx.drawImage(spriteToDraw, this.frameX * sW, actualFrameY * sH, sW, sH, offsetX, offsetY, sW * scale, sH * scale );
+                    ctx.drawImage(spriteToDraw, offsetX, offsetY, spriteToDraw.width * scale, spriteToDraw.height * scale);
                     ctx.restore();
                 } else { 
                     ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); 
@@ -577,7 +535,6 @@ Boa sorte, soldado!`;
                 if (!target) return; 
                 
                 let dx = target.x - this.x, dy = target.y - this.y, dist = Math.hypot(dx, dy);
-                
                 let oldFacing = this.facing;
                 
                 if (Math.abs(dx) > Math.abs(dy)) { 
@@ -586,20 +543,13 @@ Boa sorte, soldado!`;
                     this.facing = dy > 0 ? 'down' : 'up'; 
                 }
                 
-                // Pega a configuração de animação que definimos no construtor
-                let anim = this.animConfig[this.facing];
-                this.frameY = anim.row;
-                
-                // Se o inimigo mudou de direção, reseta a animação para o primeiro quadro
                 if (oldFacing !== this.facing) {
                     this.animationStep = 0;
-                    this.frameX = anim.frames[0];
                 }
                 
-                // Toca a animação percorrendo os quadros escolhidos
-                if (game.frame % 6 === 0) {
-                    this.animationStep = (this.animationStep + 1) % anim.frames.length;
-                    this.frameX = anim.frames[this.animationStep];
+                let framesArray = enemyFrames[this.facing];
+                if (framesArray && framesArray.length > 0 && game.frame % 12 === 0) {
+                    this.animationStep = (this.animationStep + 1) % framesArray.length;
                 }
                 
                 if (dist <= this.speed) { 
@@ -609,7 +559,7 @@ Boa sorte, soldado!`;
                 }
             }
         }
-        
+
         class Projectile { 
             constructor(x, y, target, damage, color) { 
                 this.x = x; this.y = y; this.target = target; this.speed = 12; 
@@ -854,11 +804,10 @@ Boa sorte, soldado!`;
                 } 
             } 
         }
-        
+
         function spawnEnemies() { 
             if (game.currentLevel !== 0) { 
-                // NOVO CÁLCULO DE SPAWN: Começa mais rápido (120 frames) e desce muito mais rápido, chegando a 30 frames
-                let spawnRate = Math.max(30, 120 - (game.wave * 10)); 
+                let spawnRate = Math.max(60, 200 - (game.wave * 10)); 
                 if (game.frame % Math.floor(spawnRate) === 0) { 
                     if (game.fastToSpawn > 0) { enemies.push(new Enemy('fast')); game.fastToSpawn--; } 
                     else if (game.enemiesToSpawn > 0) { enemies.push(new Enemy('normal')); game.enemiesToSpawn--; } 
@@ -867,7 +816,7 @@ Boa sorte, soldado!`;
                 } 
             } 
         }
-        
+
         function checkCollisions() { 
             for (let i = projectiles.length - 1; i >= 0; i--) { 
                 let p = projectiles[i]; 
@@ -903,7 +852,7 @@ Boa sorte, soldado!`;
                 } 
             } 
         }
-        
+
         function drawKeyUI(ctx, x, y, keyChar, size = 24) { 
             let half = size / 2; ctx.fillStyle = 'rgba(10, 10, 15, 0.9)'; ctx.strokeStyle = '#00ffcc'; 
             ctx.lineWidth = 2; ctx.beginPath(); 
@@ -913,8 +862,9 @@ Boa sorte, soldado!`;
             ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.floor(size * 0.6)}px "Segoe UI"`; 
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(keyChar, x, y + 1); 
         }
-        
+
         function drawMap() { 
+            ctx.fillStyle = '#050608'; ctx.fillRect(camera.x, camera.y, canvas.width, canvas.height); 
             ctx.fillStyle = '#0f1319'; ctx.fillRect(0, 0, worldWidth, worldHeight); 
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)'; ctx.lineWidth = 1; ctx.beginPath(); 
             for(let x = 0; x <= worldWidth; x += 50) { ctx.moveTo(x, 0); ctx.lineTo(x, worldHeight); } 
@@ -957,7 +907,7 @@ Boa sorte, soldado!`;
                 } 
             } 
         }
-        
+
         function drawTutorialVisuals() { 
             if (game.currentLevel !== 0) return; 
             let pulse = Math.sin(game.frame * 0.15) * 8, b0 = buildings[0]; 
@@ -981,11 +931,11 @@ Boa sorte, soldado!`;
                 drawFloatingArrow(b0.spotX + 25, b0.spotY + 110); 
             }
         }
-        
+
         function drawUI() { 
             if (activeSpot) { 
                 let currentTower = towers.find(tw => tw.spot === activeSpot); 
-                ctx.save(); 
+                ctx.save(); ctx.translate(-camera.x, -camera.y); 
                 ctx.fillStyle = '#fff'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; 
                 
                 if (activeSpot.hasTower && currentTower) { 
@@ -1011,14 +961,12 @@ Boa sorte, soldado!`;
             if (!game.isRunning) return; 
             requestAnimationFrame(gameLoop); 
             
-            // Controle de Tempo: garante que a velocidade não depende dos Hz do monitor
             if (!lastTime) lastTime = timestamp;
             let deltaTime = timestamp - lastTime;
             lastTime = timestamp;
             
-            if (deltaTime > 250) deltaTime = 250; // Evita bugar se a aba do navegador ficar minimizada
+            if (deltaTime > 250) deltaTime = 250; 
             
-            // Multiplicador global: 1.35x para o jogo base (35% mais rápido) ou 2.7x se o botão de velocidade estiver ativo
             let speedMultiplier = game.isDoubleSpeed ? 2.7 : 1.35;
             deltaTime *= speedMultiplier;
             
@@ -1027,28 +975,20 @@ Boa sorte, soldado!`;
             let updated = false;
             while (accumulator >= frameInterval) {
                 game.frame++; updatePlayer(); updateCamera(); manageWaves(); spawnEnemies(); updateTutorial(); 
-                
                 enemies.forEach(e => e.update()); projectiles.forEach(p => p.update()); 
                 towers.forEach(t => t.update()); particles.forEach(p => p.update()); 
                 floatingTexts.forEach(ft => ft.update()); 
-                
                 particles = particles.filter(p => p.life > 0); 
                 floatingTexts = floatingTexts.filter(ft => ft.life > 0); 
-                
                 checkCollisions(); 
-                
                 accumulator -= frameInterval;
                 updated = true;
             }
-            
-            // Só redesenha se o jogo realmente andou para frente
             if (!updated) return;
             
             ctx.clearRect(0, 0, canvas.width, canvas.height); 
             ctx.fillStyle = '#050608'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
             ctx.save(); 
-            
             let shakeX = (Math.random() - 0.5) * screenShake, shakeY = (Math.random() - 0.5) * screenShake; 
             ctx.translate(-camera.x + shakeX, -camera.y + shakeY); 
             screenShake *= 0.9; if (screenShake < 0.5) screenShake = 0; 
@@ -1096,12 +1036,9 @@ Boa sorte, soldado!`;
                 ctx.shadowBlur = 0; 
             } 
             
-            ctx.restore(); // Restaura o contexto do player
-            
+            ctx.restore(); 
             drawTutorialVisuals(); 
-            drawUI(); 
-            
-            ctx.restore(); // Restaura o contexto da câmera
+            ctx.restore(); 
             
             if (game.isWaitingForWave && game.currentLevel !== 0) { 
                 let secondsLeft = Math.ceil((game.waveDelay - game.waveDelayCounter) / 60), nextWave = game.wave + 1; 
@@ -1118,34 +1055,19 @@ Boa sorte, soldado!`;
                 } 
                 ctx.shadowBlur = 0; ctx.textAlign = 'left'; 
             } 
+            drawUI(); 
         }
         
         function toggleSpeed() { 
             game.isDoubleSpeed = !game.isDoubleSpeed; 
-            // A velocidade de todo o jogo (incluindo o jogador) agora é acelerada pelo gameLoop!
+            player.speed = game.isDoubleSpeed ? 8 : 4; 
             document.getElementById('speed-btn').innerText = game.isDoubleSpeed ? '▶▶ 2x Vel' : '▶ 1x Vel'; 
         }
         
-        function startLevel(lvl) { 
-            game.currentLevel = lvl; menuScreen.style.display = 'none'; 
-            gameContainer.style.display = 'block'; resizeCanvas(); reiniciarJogo(); 
-        }
-        
-        function backToMenu() { 
-            game.isRunning = false; gameContainer.style.display = 'none'; 
-            menuScreen.style.display = 'flex'; gameOverScreen.style.display = 'none'; 
-            tutorialBox.style.display = 'none'; 
-        }
-        
-        function gameOver() { 
-            game.isRunning = false; document.getElementById('game-over-title').innerText = "O Núcleo Foi Comprometido!"; 
-            finalMoneyEl.innerText = game.money; gameOverScreen.style.display = 'flex'; 
-        }
-        
-        function gameWon() { 
-            game.isRunning = false; document.getElementById('game-over-title').innerText = "Núcleo Defendido!"; 
-            finalMoneyEl.innerText = game.money; gameOverScreen.style.display = 'flex'; 
-        }
+        function startLevel(lvl) { game.currentLevel = lvl; menuScreen.style.display = 'none'; gameContainer.style.display = 'block'; resizeCanvas(); reiniciarJogo(); }
+        function backToMenu() { game.isRunning = false; gameContainer.style.display = 'none'; menuScreen.style.display = 'flex'; gameOverScreen.style.display = 'none'; tutorialBox.style.display = 'none'; }
+        function gameOver() { game.isRunning = false; document.getElementById('game-over-title').innerText = "O Núcleo Foi Comprometido!"; finalMoneyEl.innerText = game.money; gameOverScreen.style.display = 'flex'; }
+        function gameWon() { game.isRunning = false; document.getElementById('game-over-title').innerText = "Núcleo Defendido!"; finalMoneyEl.innerText = game.money; gameOverScreen.style.display = 'flex'; }
         
         function reiniciarJogo() { 
             game.lives = 5; game.money = 200; game.frame = 0; player.lastFire = 0; 
@@ -1154,10 +1076,7 @@ Boa sorte, soldado!`;
             game.waveDelayCounter = 0; game.isRunning = true; game.isWaitingForWave = true; 
             enemies = []; projectiles = []; towers = []; activeSpot = null; particles = []; 
             floatingTexts = []; screenShake = 0; tutorialDelay = 0; typeWriter.fullText = ""; 
-            
-            // Reseta o tempo para não dar um salto gigante na próxima jogada
             lastTime = 0; accumulator = 0;
-            
             tutorialMsg.innerText = ""; document.getElementById('restart-btn').style.display = 'inline-block'; 
             setupLevelData(game.currentLevel); livesEl.innerText = game.lives; 
             moneyEl.innerText = game.money; waveEl.innerText = `1 / 10`; 
